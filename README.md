@@ -7,7 +7,7 @@
 # Start
 - 依赖安装
   ```
-  pip install -r requirements
+  pip install -r requirements.txt
   ```
 
 - 测试样例
