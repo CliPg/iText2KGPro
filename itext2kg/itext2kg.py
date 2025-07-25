@@ -3,6 +3,9 @@ from .ientities_extraction import iEntitiesExtractor
 from .irelations_extraction import iRelationsExtractor
 from .utils import Matcher, LangchainOutputParser
 from .models import KnowledgeGraph
+import json
+import numpy as np
+import os
 
 class iText2KG:
     """
@@ -118,7 +121,7 @@ class iText2KG:
             
             global_relationships.extend(processed_relationships)
         
-        if existing_knowledge_graph:
+        if existing_knowledge_graph:                    
             print(f"[INFO] ------- Matching the Document {1} Entities and Relationships with the Existing Global Entities/Relations")
             global_entities, global_relationships = self.matcher.match_entities_and_update_relationships(entities1=global_entities,
                                                                  entities2=existing_knowledge_graph.entities,
@@ -138,10 +141,50 @@ class iText2KG:
             
             global_entities = unique_entities
             """   
-        
+            
         constructed_kg = KnowledgeGraph(entities=global_entities, relationships=global_relationships)
         constructed_kg.remove_duplicates_entities()
         constructed_kg.remove_duplicates_relationships()
          
         return constructed_kg
+    
+
+    def convert_ndarray_to_list(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif isinstance(obj, dict):
+            return {k: self.convert_ndarray_to_list(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self.convert_ndarray_to_list(item) for item in obj]
+        else:
+            return obj
+    
+
+    def save_graph(self, kg: KnowledgeGraph, filename: str):
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        kgs_dir = os.path.join(os.path.dirname(current_dir), "kgs")
+        os.makedirs(kgs_dir, exist_ok=True)
+
+        base_filename = os.path.basename(filename)
+        save_path = os.path.join(kgs_dir, base_filename)
+
+        raw_data = kg.model_dump()
+        safe_data = self.convert_ndarray_to_list(raw_data)
+
+        with open(save_path, "w", encoding="utf-8") as f:
+            json.dump(safe_data, f, ensure_ascii=False, indent=2)
+
+
+    
+    def load_graph(self, filename: str) -> KnowledgeGraph:
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        kgs_dir = os.path.join(project_root, "kgs")
+        load_path = os.path.join(kgs_dir, filename)
+    
+        with open(load_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    
+        return KnowledgeGraph.model_validate(data)
+
     

@@ -57,7 +57,8 @@ class GraphIntegrator:
         """
         if embeddings is None:
             return ""
-        return ",".join(list(embeddings.astype("str")))
+        embeddings = np.array(embeddings)
+        return ",".join(list(embeddings.astype(str)))
     
     @staticmethod
     def transform_str_list_to_embeddings(embeddings:List[str]):
